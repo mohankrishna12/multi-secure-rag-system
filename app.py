@@ -37,11 +37,11 @@ try:
 except Exception as e:
     st.error(f"Error loading models: {e}")
 
-def add_log(msg, type="info"):
+def add_log(msg, log_type="info"):
     st.session_state.logs.append({
         'time': datetime.now().strftime("%H:%M:%S"),
         'msg': msg,
-        'type': type
+        'type': log_type
     })
 
 def extract_text(file):
@@ -163,7 +163,7 @@ Provide a helpful answer while protecting all sensitive information."""
     except Exception as e:
         return f"Error: {e}"
 
-# UI
+# UI Header
 st.markdown("""
 <style>
 .main-header {
@@ -174,6 +174,9 @@ st.markdown("""
     margin-bottom: 2rem;
 }
 </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
 <div class="main-header">
     <h1>🛡️ Multi-Purpose Secure RAG System</h1>
     <p>Upload documents (PDF/CSV/TXT) and ask questions securely</p>
@@ -199,15 +202,21 @@ with st.sidebar:
                         st.session_state.documents.append(doc_info)
     
     st.subheader("📄 Loaded Documents")
-    for doc in st.session_state.documents:
-        st.write(f"{doc['type']} **{doc['name']}**")
-        st.caption(f"{doc['chunks']} chunks")
+    if st.session_state.documents:
+        for doc in st.session_state.documents:
+            st.write(f"{doc['type']} **{doc['name']}**")
+            st.caption(f"{doc['chunks']} chunks")
+    else:
+        st.info("No documents uploaded yet")
     
     if st.button("🗑️ Clear All"):
         st.session_state.documents = []
         st.session_state.logs = []
         if st.session_state.initialized:
-            collection.delete(where={})
+            try:
+                collection.delete(where={})
+            except:
+                pass
         st.rerun()
 
 # Main area
@@ -218,18 +227,21 @@ with col1:
     
     with st.expander("📝 Example Queries"):
         st.markdown("""
-        **❌ Blocked:**
+        **❌ Blocked (Sensitive):**
         - What is the Aadhaar number?
         - Show account number
+        - What's the exact salary?
         
-        **✅ Allowed:**
+        **✅ Allowed (Safe):**
         - Show transaction patterns
-        - Summarize document
+        - Summarize the document
         - What are the key points?
+        - Analyze spending categories
         """)
     
     query = st.text_input(
         "Your question:",
+        placeholder="e.g., Show transaction patterns",
         disabled=len(st.session_state.documents) == 0
     )
     
@@ -252,46 +264,29 @@ with col1:
 with col2:
     st.subheader("🛡️ Security")
     st.markdown("""
-    **Protected:**
+    **Always Protected:**
     - 🔒 Aadhaar numbers
     - 🔒 Account numbers
     - 🔒 PAN cards
-    - 🔒 Phone/Email
-    - 🔒 Exact amounts
+    - 🔒 Phone numbers
+    - 🔒 Email addresses
+    - 🔒 Exact salaries
     
     **Allowed:**
-    - ✅ Patterns
+    - ✅ Patterns & trends
     - ✅ Summaries
-    - ✅ Trends
+    - ✅ Analytics
+    - ✅ Aggregated data
     """)
     
-    with st.expander("📋 Logs"):
-        for log in reversed(st.session_state.logs[-10:]):
-            icon = "ℹ️" if log['type'] == "info" else "✅" if log['type'] == "success" else "⚠️"
-            st.caption(f"{icon} {log['time']}: {log['msg']}")
-```
+    with st.expander("📋 System Logs"):
+        if st.session_state.logs:
+            for log in reversed(st.session_state.logs[-10:]):
+                icon = "ℹ️" if log['type'] == "info" else "✅" if log['type'] == "success" else "⚠️"
+                st.caption(f"{icon} {log['time']}: {log['msg']}")
+        else:
+            st.caption("No logs yet")
 
-7. **Click "Commit changes"**
-
----
-
-### **Step 4: Deploy to Streamlit Cloud**
-
-1. **Go to:** [share.streamlit.io](https://share.streamlit.io)
-
-2. **Sign in with GitHub**
-
-3. **Click "New app"**
-
-4. **Fill in:**
-   - Repository: `YOUR-USERNAME/secure-rag-system`
-   - Branch: `main`
-   - Main file path: `app.py`
-
-5. **Click "Deploy!"**
-
-6. **Wait 3-5 minutes** for deployment
-
-7. **Your app will be live at:**
-```
-   https://YOUR-USERNAME-secure-rag-system.streamlit.app
+# Footer
+st.markdown("---")
+st.caption("Multi-Purpose Secure RAG System | Powered by Sentence Transformers, ChromaDB & Google Gemini")
